@@ -142,10 +142,12 @@ int main() {
 		}
 
 		window.camera.update_userInput(VMouse, tElapsed);
-		window.clearFrameBuf();
+		//window.clearFrameBuf();
+		window.hGradientFill(pixel(240, 240, 255, 0), pixel(96, 128, 255, 0));
 		window.clearDepthBuf();
 
-		std::for_each(std::execution::par_unseq, objects.begin(), objects.end(), [&window](auto && mesh) {
+		std::for_each(std::execution::par_unseq, objects.begin(),
+			objects.end(), [&window](auto && mesh) {
 			Mesh viewMesh;
 			window.camera.applyView(mesh, viewMesh);
 			viewMesh.clip();
