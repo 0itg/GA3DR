@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "MatUtil.h"
 #include "Camera.h"
+#include "Spinlock.h"
 
 #include <SFML/Graphics.hpp>
 #include <algorithm>
@@ -17,11 +18,24 @@ public:
 
 	Window3d(int width, int height, std::string title);
 	~Window3d();
-	void clearFrameBuf(pixel color = pixel(0, 0, 0, 255)) {
-		std::fill(frameBuf, frameBuf + getSize().x * getSize().y, color);
+	void clearFrameBuf(pixel color = pixel(0, 0, 0, 0)) {
+		std::fill(std::execution::par_unseq, frameBuf, frameBuf
+			+ getSize().x * getSize().y, color);
+	}
+	void hGradientFill(pixel colorStart, pixel colorEnd) {
+		pixel* lastPixel = frameBuf + getSize().x * (getSize().y);
+		int rowLen = getSize().x;
+		float t = 0, tStep = 1.0f / getSize().y;
+		for (pixel* pix = frameBuf; pix < lastPixel; pix += rowLen) {
+			pixel color = colorStart * (1 - t) + colorEnd * t;
+			std::fill(std::execution::par_unseq, pix, pix + rowLen - 1, color);
+			t += tStep;
+		}
 	}
 	void clearDepthBuf() {
-		memset(depthBuf, 0, getSize().x * getSize().y * sizeof(float));
+		//memset(depthBuf, 0, getSize().x * getSize().y * sizeof(float));
+		std::fill(std::execution::par_unseq, depthBuf, depthBuf
+			+ getSize().x * getSize().y, 0);
 	}
 	void display() {
 		screenTex.update(screenPtr);
@@ -38,18 +52,19 @@ public:
 private:
 	pixel* frameBuf;
 	float* depthBuf;
+	SpinLock* writeToScreen; //One SpinLock per pixel
 	sf::Texture screenTex;
 	sf::Uint8* screenPtr;
 	sf::VertexArray screenQuad;
 };
 
-inline pixel alphaBlend(pixel old, pixel n) {
-	float a = (float)(255 - n.a) / 255;
-	float b = (float)n.a / 255;
-	return pixel((a * old.r + b * n.r),
-		(a * old.g + b * n.g),
-		(a * old.b + b * n.b),
-		255);
+inline pixel alphaBlend(pixel dst, pixel src) {
+	int src_a_cmpl = ((255 - src.a) * dst.a) / 255;
+	int fout_a = src_a_cmpl + src.a;
+	return pixel((src_a_cmpl * dst.r + src.a * src.r) / fout_a,
+		(src_a_cmpl * dst.g + src.a * src.g) / fout_a,
+		(src_a_cmpl * dst.b + src.a * src.b) / fout_a,
+		fout_a);
 }
 
 inline pixel sample(float u, float v, pixel* texture, int w, int h) {
