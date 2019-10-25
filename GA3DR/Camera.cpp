@@ -13,7 +13,7 @@ using namespace c3ga;
 Camera::Camera(Window3d* window, float FoVinit) :
 	Rhoriz(c3ga::_rotor(1)), Rvert(c3ga::_rotor(1)),
 	Rposition(c3ga::_normalizedTranslator(1)), parent(window), FoV(FoVinit),
-	projMat(Mat4x4{ -(float)window->getSize().y /
+	projMat(Mat4x4{ (float)window->getSize().y /
 	(window->getSize().x * tanf(FoVinit / 2)), 0.0f, 0.0f, 0.0f,
 						 0.0f, -1 / tanf(FoVinit / 2), 0.0f, 0.0f,
 						 0.0f, 0.0f, -1.0f, 0.0f,
@@ -37,12 +37,12 @@ void Camera::update_userInput(const sf::Vector2i& mouseVec, int tElapsed) {
 
 	// Rotate using Euler Angles, no roll, for FPS-like controls
 	bivectorE3GA hKeybd = _bivectorE3GA(tElapsed / 2000000.0f * e1 ^ e3);
-	bivectorE3GA hMouse = hKeybd * mouseVec.x * 0.4;
+	bivectorE3GA hMouse = hKeybd * mouseVec.x * 0.2;
 	bivectorE3GA vKeybd = _bivectorE3GA(tElapsed / 2000000.0f * e3 ^ e2);
-	bivectorE3GA vMouse = vKeybd * mouseVec.y * 0.4;
+	bivectorE3GA vMouse = vKeybd * mouseVec.y * 0.2;
 
 	if (mouseVec.x != 0) {
-		rotor R = _rotor(exp(-hMouse));
+		rotor R = _rotor(exp(hMouse));
 		Rhoriz = R * Rhoriz;
 	}
 	if (mouseVec.y != 0) {
@@ -51,11 +51,11 @@ void Camera::update_userInput(const sf::Vector2i& mouseVec, int tElapsed) {
 	}
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-		rotor R = _rotor(exp(hKeybd));
+		rotor R = _rotor(exp(-hKeybd));
 		Rhoriz = R * Rhoriz;
 	}
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-		rotor R = _rotor(exp(-hKeybd));
+		rotor R = _rotor(exp(hKeybd));
 		Rhoriz = R * Rhoriz;
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
@@ -79,11 +79,11 @@ void Camera::update_userInput(const sf::Vector2i& mouseVec, int tElapsed) {
 
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-		normalizedTranslator R = _normalizedTranslator(1 + strafe);
+		normalizedTranslator R = _normalizedTranslator(1 - strafe);
 		Rposition = R * Rposition;
 	}
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-		normalizedTranslator R = _normalizedTranslator(1 - strafe);
+		normalizedTranslator R = _normalizedTranslator(1 + strafe);
 		Rposition = R * Rposition;
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
@@ -111,7 +111,7 @@ void Camera::update_userInput(const sf::Vector2i& mouseVec, int tElapsed) {
 
 void Camera::setFoV(float newFoV){
 	float FoVfactor = 1 / tanf(newFoV / 2);
-	projMat.c[0] = -(float)parent->getSize().y / (float)parent->getSize().x * FoVfactor;
+	projMat.c[0] = (float)parent->getSize().y / (float)parent->getSize().x * FoVfactor;
 	projMat.c[5] = -FoVfactor;
 	FoV = newFoV;
 	viewMat = matrixMultiply(projMat, modelMat);

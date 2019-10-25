@@ -32,7 +32,7 @@ public:
 	}
 	void reset() {
 		Rhoriz = 1; Rvert = 1; Rposition = 0;
-		setFoV(M_PI / 2);
+		setFoV(M_PI * 7 / 18);
 	}
 	float getFoV() { return FoV; };
 	void setFoV(float FoV);
@@ -58,7 +58,7 @@ public:
 			//If triangle is facing away from camera, don't draw it.
 			c3ga::plane normal =
 				_plane(((c3ga::no << a) ^ (c3ga::no << b)) ^ c);
-			if (normal.e1e2noni() > 0)  viewMesh.addTriangle(tri);
+			if (normal.e1e2noni() < 0)  viewMesh.addTriangle(tri);
 		}
 	}
 };

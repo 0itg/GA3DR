@@ -39,27 +39,27 @@ int main() {
 	std::vector <Model*> models;
 	std::vector<Mesh*> objects;
 
-	Model teapot1("Models/teapot/teapot.obj"), teapot2("Models/teapot/teapot.obj");
+	/*Model teapot1("Models/teapot/teapot.obj"), teapot2("Models/teapot/teapot.obj");
 	teapot1.motion(c3gaPoint(-30, 4, -4), 5);
 	teapot2.motion(c3gaPoint(30, 4, -4), 5,
 		exp(_bivectorE3GA(0.5 * M_PI * e1 ^ e3)));
 	teapot1.recalcPlanes(true);
 	models.push_back(&teapot1);
-	models.push_back(&teapot2);
+	models.push_back(&teapot2);*/
 
-	//Model batman("Models/Batman/batman.obj");
-	//batman.motion(c3gaPoint(0, 0, 2), 20);
-	//models.push_back(&batman);
+	Model batman("Models/Batman/batman.obj");
+	batman.motion(c3gaPoint(0, 0, 2), 20);
+	models.push_back(&batman);
 
-	//Model level("Models/WF/WF.obj");
-	//level.motion(c3gaPoint(-100, 25, -50));
-	//models.push_back(&level);
+	Model level("Models/WF/WF.obj");
+	level.motion(c3gaPoint(-100, -25, 50));
+	models.push_back(&level);
 
-	Model head("Models/head/obj_free_male_head.obj");
-	head.motion(c3gaPoint(0, 2, -12), 5);
-	models.push_back(&head);
-	head.recalcPlanes(true);
-	head.splitGroups();
+	//Model head("Models/head/obj_free_male_head.obj");
+	//head.motion(c3gaPoint(0, 2, -12), 5);
+	//models.push_back(&head);
+	//head.recalcPlanes(true);
+	//head.splitGroups();
 	//head.splitGroups(10000);
 
 
@@ -120,11 +120,11 @@ int main() {
 					window.camera.speedFactor /= 1.5;
 					break;
 				case sf::Keyboard::Q: {
-					float FoV = window.camera.getFoV() + M_PI / 36;
+					float FoV = std::min(window.camera.getFoV() + M_PI / 36, M_PI * 35 / 36);
 					window.camera.setFoV(FoV); }
 					break;
 				case sf::Keyboard::E: {
-					float FoV = window.camera.getFoV() - M_PI / 36;
+					float FoV = std::max(window.camera.getFoV() - M_PI / 36, M_PI / 36);
 					window.camera.setFoV(FoV); }
 					break;
 				}
