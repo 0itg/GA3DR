@@ -11,12 +11,15 @@
 using namespace c3ga;
 
 Window3d::Window3d(int width, int height, std::string title) :
-			   RenderWindow(sf::VideoMode(width, height), title), camera(this) {
+		RenderWindow(sf::VideoMode(width, height), title),
+		camera(this, M_PI * 7 / 18) {  // Vertical FoV 70 degrees
 	frameBuf = new pixel[width * height];
 	depthBuf = new float[width * height];
 	writeToScreen = new SpinLock[width * height];
 	screenPtr = (sf::Uint8*)frameBuf;
 
+	// Full-screen textured quad to send rasterized image
+	// to the screen via SFML/OpenGl;
 	screenTex.create(width, height);
 	screenQuad = sf::VertexArray(sf::Quads, 4);
 	screenQuad[0].position = sf::Vector2f(0, 0);
@@ -38,42 +41,7 @@ Window3d::~Window3d() {
 	delete[] writeToScreen;
 }
 
-//void Window3d::renderObject(Mesh& viewMesh) {
-//	std::sort(viewMesh.faces.begin(), viewMesh.faces.end(),
-//		[](const Triangle& T1, const Triangle& T2)->bool {
-//			char T1alpha = sample(T1.t[0], T1.t[1], T1.mtlPtr->texture(),
-//				T1.mtlPtr->texSize().x, T1.mtlPtr->texSize().y).a;
-//			char T2alpha = sample(T2.t[0], T2.t[1], T2.mtlPtr->texture(),
-//				T2.mtlPtr->texSize().x, T2.mtlPtr->texSize().y).a;
-//			return T1alpha < T2alpha;
-//		});
-//
-//	for (auto& tri : viewMesh.faces) {
-//
-//		//if (DEBUG_WIREFRAME) {
-//		//	flatPoint a = tri.a();
-//		//	flatPoint b = tri.b();
-//		//	flatPoint c = tri.c();
-//		//	window.drawLine(a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni(),
-//		//		b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni());
-//		//	window.drawLine(b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni(),
-//		//		c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni());
-//		//	window.drawLine(c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni(),
-//		//		a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni());
-//		//}
-//
-//		//if (DEBUG_NOSURFACES == false) {
-//		//	if (DEBUG_NOTEXTURES) {
-//		//		std::string name = tri.mtlPtr->mtlName;
-//		//		if (name != "red" && name != "green" && name != "blue")
-//		//			tri.mtlPtr = viewMesh.mtlLib.mtl["default"]; // default = solid white material
-//		//	}
-//			drawTriangle(tri);
-//		}
-//}
-
-void Window3d::drawLine(float x1, float y1, float x2, float y2, pixel color)
-{
+void Window3d::drawLine(float x1, float y1, float x2, float y2, pixel color) {
 	// Convert normalized coordinates to window coordinates.
 	// Set mins/maxes to window borders for safety.
 	x1 = std::min((unsigned int)((x1 + 1) *
@@ -91,7 +59,7 @@ void Window3d::drawLine(float x1, float y1, float x2, float y2, pixel color)
 	int x, y, dx, dy, yPrg, xPrg;
 	dx = x2 - x1;
 	dy = y2 - y1;
-	yPrg = 0; xPrg = 0; // y Progress, x Progress
+	yPrg = 0; xPrg = 0;
 	// loop over whichever direction has more
 	// pixels to make sure we get them all.
 	if (abs(dx) >= abs(dy))
@@ -183,12 +151,11 @@ void Window3d::drawLine(float x1, float y1, float x2, float y2, pixel color)
 		}
 	}
 }
-//SpinLock writeToScreen;
-void Window3d::drawTriangle(const Triangle& tri) {
 
+void Window3d::drawTriangle(const Triangle& tri) {
 	int x, y, pix;
 	float u, v, w, uStart, uEnd, vStart, vEnd, wStart,
-		  wEnd, r, r1, s, s1, t, t1, qp, slope12, slope23;
+		  wEnd, r, r1, s, s1, t, t1, tStep, slope12, slope23;
 
 	// Load parameters from triangle object.
 	float u1 = tri.ta().x; float u2 = tri.tb().x; float u3 = tri.tc().x;
@@ -206,11 +173,11 @@ void Window3d::drawTriangle(const Triangle& tri) {
 	const unsigned char* dif = tri.mtlPtr->Kd.c;
 	pixel ambient(amb[0], amb[1], amb[2]);
 	
-	const float orientA = std::max(_Float(tri.na() << dual(e3)), 0.0f);
+	const float orientA = std::max(tri.na().e1e2noni(), 0.0f);
 	pixel color1(orientA * dif[0], orientA * dif[1], orientA * dif[2]);
-	const float orientB = std::max(_Float(tri.nb() << dual(e3)), 0.0f);
+	const float orientB = std::max(tri.nb().e1e2noni(), 0.0f);
 	pixel color2(orientB * dif[0], orientB * dif[1], orientB * dif[2]);
-	const float orientC = std::max(_Float(tri.nc() << dual(e3)), 0.0f);
+	const float orientC = std::max(tri.nc().e1e2noni(), 0.0f);
 	pixel color3(orientC * dif[0], orientC * dif[1], orientC * dif[2]);
 	pixel diffuse, colStart, colEnd;
 
@@ -288,7 +255,8 @@ void Window3d::drawTriangle(const Triangle& tri) {
 			wEnd = w1 * r1 + w3 * r;
 			colEnd = color1 * r1 + color3 * r;
 			s -= 1 / dy12; r -= 1 / dy13;
-			t = tStart; qp = (int)q - (int)p + 1;
+			t = tStart;
+			tStep = 1 / (float)((int)q - (int)p + 1);
 
 			for (x = (int)*lineStart; x < (int)*lineEnd; ++x) {
 				t1 = 1 - t;
@@ -296,7 +264,7 @@ void Window3d::drawTriangle(const Triangle& tri) {
 				v = vStart * t1 + vEnd * t;
 				w = wStart * t1 + wEnd * t;
 				diffuse = colStart * (1 - t) + colEnd * t;
-				t += 1 / (qp);
+				t += tStep;
 
 				pix = getSize().x * y + x;
 				writeToScreen[pix].lock();
@@ -319,8 +287,8 @@ void Window3d::drawTriangle(const Triangle& tri) {
 				//}
 				writeToScreen[pix].unlock();
 			}
-			p = p - slope12;
-			q = q - slope13;
+			p -= slope12;
+			q -= slope13;
 		}
 	}
 	if (dy23) {
@@ -343,7 +311,8 @@ void Window3d::drawTriangle(const Triangle& tri) {
 			wEnd = w1 * r1 + w3 * r;
 			colEnd = color1 * r1 + color3 * r;
 			s -= 1 / dy23; r -= 1 / dy13;
-			t = tStart; qp = (int)q - (int)p + 1;
+			t = tStart;
+			tStep = 1 / (float)((int)q - (int)p + 1);
 
 			for (x = (int)*lineStart; x < (int)*lineEnd; ++x) {
 				t1 = 1 - t;
@@ -351,7 +320,7 @@ void Window3d::drawTriangle(const Triangle& tri) {
 				v = vStart * t1 + vEnd * t;
 				w = wStart * t1 + wEnd * t;
 				diffuse = colStart * t1 + colEnd * t;
-				t += 1 / (qp);
+				t += tStep;
 
 				pix = getSize().x * y + x;
 				writeToScreen[pix].lock();
@@ -374,8 +343,8 @@ void Window3d::drawTriangle(const Triangle& tri) {
 				//}
 				writeToScreen[pix].unlock();
 			}
-			p = p - slope23;
-			q = q - slope13;
+			p -= slope23;
+			q -= slope13;
 		}
 	}
 }

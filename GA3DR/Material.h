@@ -41,9 +41,6 @@ public:
 	std::string map_Ka;
 	std::string map_Ks;
 	float Ns;
-	/*unsigned char Ka[3];
-	unsigned char Kd[3];
-	unsigned char Ks[3];*/
 	pixel Ka;
 	pixel Kd;
 	pixel Ks;

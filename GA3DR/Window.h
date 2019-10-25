@@ -19,8 +19,9 @@ public:
 	Window3d(int width, int height, std::string title);
 	~Window3d();
 	void clearFrameBuf(pixel color = pixel(0, 0, 0, 0)) {
-		std::fill(std::execution::par_unseq, frameBuf, frameBuf
-			+ getSize().x * getSize().y, color);
+		memset(frameBuf, 0, getSize().x * getSize().y * sizeof(pixel));
+		/*std::fill(std::execution::par_unseq, frameBuf, frameBuf
+			+ getSize().x * getSize().y, color);*/
 	}
 	void hGradientFill(pixel colorStart, pixel colorEnd) {
 		pixel* lastPixel = frameBuf + getSize().x * (getSize().y);
@@ -33,9 +34,7 @@ public:
 		}
 	}
 	void clearDepthBuf() {
-		//memset(depthBuf, 0, getSize().x * getSize().y * sizeof(float));
-		std::fill(std::execution::par_unseq, depthBuf, depthBuf
-			+ getSize().x * getSize().y, 0);
+		memset(depthBuf, 0, getSize().x * getSize().y * sizeof(float));
 	}
 	void display() {
 		screenTex.update(screenPtr);
@@ -46,6 +45,7 @@ public:
 	void drawLine(float x1, float y1, float x2, float y2, 
 				  pixel color = pixel(255, 255, 255, 255));
 	inline void renderObject(Mesh& viewMesh);
+	inline void renderWireframe(Mesh& viewMesh);
 	// Takes 3d coordinates and divides by z to project to screen.
 	void drawTriangle(const Triangle& tri);
 
@@ -95,21 +95,8 @@ inline void Window3d::renderObject(Mesh& viewMesh) {
 				T2.mtlPtr->texSize().x, T2.mtlPtr->texSize().y).a;
 			return T1alpha < T2alpha;
 		});
-
-	std::for_each(std::execution::seq, viewMesh.faces.begin(),
+	std::for_each(std::execution::par_unseq, viewMesh.faces.begin(),
 		viewMesh.faces.end(), [this](auto&& tri) {
-		if (DEBUG_WIREFRAME) {
-			c3ga::flatPoint a = tri.a();
-			c3ga::flatPoint b = tri.b();
-			c3ga::flatPoint c = tri.c();
-			drawLine(a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni(),
-				b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni());
-			drawLine(b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni(),
-				c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni());
-			drawLine(c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni(),
-				a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni());
-		}
-		if (DEBUG_NOSURFACES == false) {
 			if (DEBUG_NOTEXTURES) {
 				std::string name = tri.mtlPtr->mtlName;
 				if (name != "red" && name != "green" && name != "blue")
@@ -117,6 +104,20 @@ inline void Window3d::renderObject(Mesh& viewMesh) {
 				tri.mtlPtr = tri.parent->mtlLib.mtl["default"];
 			}
 			drawTriangle(tri);
-		}
+	});
+}
+
+inline void Window3d::renderWireframe(Mesh& viewMesh) {
+	std::for_each(std::execution::seq, viewMesh.faces.begin(),
+		viewMesh.faces.end(), [this](auto&& tri) {
+			c3ga::flatPoint a = tri.a();
+			c3ga::flatPoint b = tri.b();
+			c3ga::flatPoint c = tri.c();
+			drawLine(a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni(),
+				b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni(), pixel(0, 0, 0, 255));
+			drawLine(b.e1ni() / b.e3ni(), b.e2ni() / b.e3ni(),
+				c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni(), pixel(0, 0, 0, 255));
+			drawLine(c.e1ni() / c.e3ni(), c.e2ni() / c.e3ni(),
+				a.e1ni() / a.e3ni(), a.e2ni() / a.e3ni(), pixel(0, 0, 0, 255));
 		});
 }

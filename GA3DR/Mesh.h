@@ -49,7 +49,6 @@ public:
 	int v[3]; int t[3]; int n[3];
 	Material* mtlPtr;
 
-	Triangle() {};
 	Triangle(Mesh* mesh, int a, int b, int c,
 		int d = 0, int e = 1, int f = 2, Material * mtl = nullptr,
 		int g = -1, int h = -1, int i = -1);
@@ -138,8 +137,7 @@ public:
 	//coordinates, while lines starting with f list vertices (by place in list)
 	// belonging to a face.
 	//void load(std::string objPath);
-	void motion(c3ga::normalizedPoint location =
-		c3ga::_normalizedPoint(c3ga::no), c3ga::rotor R = c3ga::_rotor(1), float scale = 1);
+	void motion(c3ga::normalizedPoint location, float scale = 1, c3ga::rotor R = c3ga::_rotor(1));
 	void updateBoundingSphere();
 	void recalcPlanes(bool smooth = false);
 	void clip();

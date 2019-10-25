@@ -9,18 +9,21 @@
 class Window3d;
 
 class Camera {
+	Window3d* parent;
 	c3ga::rotor Rhoriz;
 	c3ga::rotor Rvert;
 	c3ga::normalizedTranslator Rposition;
 	Mat4x4 projMat;
 	Mat4x4 viewMat;
+	Mat4x4 modelMat;
 	Mat4x4 planeTransformMat;
+	float FoV;
 
 public:
 	float speedFactor;
 
 	void update_userInput(const sf::Vector2i& mouseVec, int tElapsed);
-	Camera(Window3d* window);
+	Camera(Window3d* window, float FoV);
 	c3ga::flatPoint applyView(c3ga::flatPoint p) {
 		return matrixFPMultiply(viewMat, p);
 	}
@@ -29,7 +32,10 @@ public:
 	}
 	void reset() {
 		Rhoriz = 1; Rvert = 1; Rposition = 0;
+		setFoV(M_PI / 2);
 	}
+	float getFoV() { return FoV; };
+	void setFoV(float FoV);
 	void applyView(Mesh* mesh, Mesh& viewMesh) {
 		viewMesh.vertices.resize(mesh->vertices.size());
 		std::transform(std::execution::par_unseq, mesh->vertices.begin(),
@@ -52,7 +58,7 @@ public:
 			//If triangle is facing away from camera, don't draw it.
 			c3ga::plane normal =
 				_plane(((c3ga::no << a) ^ (c3ga::no << b)) ^ c);
-			if (normal.e1e2noni() < 0)  viewMesh.addTriangle(tri);
+			if (normal.e1e2noni() > 0)  viewMesh.addTriangle(tri);
 		}
 	}
 };
