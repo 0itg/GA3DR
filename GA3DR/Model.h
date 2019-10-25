@@ -12,9 +12,9 @@ public:
 
 	void load(std::string objPath);
 	void motion(c3ga::normalizedPoint location =
-		c3ga::_normalizedPoint(c3ga::no), c3ga::rotor R =
-		c3ga::_rotor(1), float scale = 1) {
-		for (Mesh* mesh : groups) mesh->motion(location, R, scale);
+		c3ga::_normalizedPoint(c3ga::no), float scale = 1, c3ga::rotor R =
+		c3ga::_rotor(1)) {
+		for (Mesh* mesh : groups) mesh->motion(location, scale, R);
 	}
 	void recalcPlanes(bool smooth = false) {
 		for (Mesh* mesh : groups) mesh->recalcPlanes(smooth);

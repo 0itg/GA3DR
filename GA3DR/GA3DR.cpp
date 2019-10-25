@@ -39,30 +39,27 @@ int main() {
 	std::vector <Model*> models;
 	std::vector<Mesh*> objects;
 
-	//Model teapot1("Models/teapot/teapot.obj"), teapot2("Models/teapot/teapot.obj");
-	//teapot1.motion(c3gaPoint(-30, -4, 4),
-	//	exp(_bivectorE3GA(0.5 * M_PI * e2 ^ e3)), 5);
-	//teapot2.motion(c3gaPoint(30, -4, 4),
-	//	exp(_bivectorE3GA(0.5 * M_PI * e1 ^ e3)) *
-	//	exp(_bivectorE3GA(0.5 * M_PI * e2 ^ e3)), 5);
-	//teapot1.recalcPlanes(true);
-	//models.push_back(&teapot1);
-	//models.push_back(&teapot2);
+	Model teapot1("Models/teapot/teapot.obj"), teapot2("Models/teapot/teapot.obj");
+	teapot1.motion(c3gaPoint(-30, 4, -4), 5);
+	teapot2.motion(c3gaPoint(30, 4, -4), 5,
+		exp(_bivectorE3GA(0.5 * M_PI * e1 ^ e3)));
+	teapot1.recalcPlanes(true);
+	models.push_back(&teapot1);
+	models.push_back(&teapot2);
 
 	//Model batman("Models/Batman/batman.obj");
-	//batman.motion(c3gaPoint(0, 0, 2), exp(_bivectorE3GA(0.5 * M_PI * e2 ^ e3)), 20);
+	//batman.motion(c3gaPoint(0, 0, 2), 20);
 	//models.push_back(&batman);
 
-	Model level("Models/WF/WF.obj");
-	level.motion(c3gaPoint(-100, 25, -50),
-		exp(_bivectorE3GA(0.5 * M_PI * e2 ^ e3)));
-	models.push_back(&level);
+	//Model level("Models/WF/WF.obj");
+	//level.motion(c3gaPoint(-100, 25, -50));
+	//models.push_back(&level);
 
-	//Model head("Models/head/obj_free_male_head.obj");
-	//head.motion(c3gaPoint(0, -2, 12), exp(_bivectorE3GA(0.5 * M_PI * e2 ^ e3)), 5);
-	//models.push_back(&head);
-	//head.recalcPlanes(true);
-	//head.splitGroups();
+	Model head("Models/head/obj_free_male_head.obj");
+	head.motion(c3gaPoint(0, 2, -12), 5);
+	models.push_back(&head);
+	head.recalcPlanes(true);
+	head.splitGroups();
 	//head.splitGroups(10000);
 
 
@@ -122,6 +119,14 @@ int main() {
 				case sf::Keyboard::Subtract:
 					window.camera.speedFactor /= 1.5;
 					break;
+				case sf::Keyboard::Q: {
+					float FoV = window.camera.getFoV() + M_PI / 36;
+					window.camera.setFoV(FoV); }
+					break;
+				case sf::Keyboard::E: {
+					float FoV = window.camera.getFoV() - M_PI / 36;
+					window.camera.setFoV(FoV); }
+					break;
 				}
 				break;
 			case sf::Event::MouseWheelScrolled:
@@ -151,7 +156,8 @@ int main() {
 			Mesh viewMesh;
 			window.camera.applyView(mesh, viewMesh);
 			viewMesh.clip();
-			window.renderObject(viewMesh);
+			if (DEBUG_NOSURFACES == false) window.renderObject(viewMesh);
+			if (DEBUG_WIREFRAME == true) window.renderWireframe(viewMesh);
 		});
 			window.display();
 	}

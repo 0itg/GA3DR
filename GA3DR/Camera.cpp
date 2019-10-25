@@ -10,14 +10,16 @@
 
 using namespace c3ga;
 
-Camera::Camera(Window3d* window) : Rhoriz(c3ga::_rotor(1)), Rvert(c3ga::_rotor(1)),
-Rposition(c3ga::_normalizedTranslator(1)), projMat(Mat4x4{ (float)window->getSize().y /
-		(float)window->getSize().x, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f }), speedFactor(1) {
+Camera::Camera(Window3d* window, float FoVinit) :
+	Rhoriz(c3ga::_rotor(1)), Rvert(c3ga::_rotor(1)),
+	Rposition(c3ga::_normalizedTranslator(1)), parent(window), FoV(FoVinit),
+	projMat(Mat4x4{ -(float)window->getSize().y /
+	(window->getSize().x * tanf(FoVinit / 2)), 0.0f, 0.0f, 0.0f,
+						 0.0f, -1 / tanf(FoVinit / 2), 0.0f, 0.0f,
+						 0.0f, 0.0f, -1.0f, 0.0f,
+						 0.0f, 0.0f, -1.0f, 0.0f }), speedFactor(1) {
 	c3ga::TRversor RModel = _TRversor(Rvert * Rhoriz * Rposition);
-	Mat4x4 modelMat = versorToFlatPointMatrix(RModel);
+	modelMat = versorToFlatPointMatrix(RModel);
 	viewMat = matrixMultiply(projMat, modelMat);
 	planeTransformMat = versorToPlaneMatrix(RModel);
 }
@@ -77,32 +79,40 @@ void Camera::update_userInput(const sf::Vector2i& mouseVec, int tElapsed) {
 
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-		normalizedTranslator R = _normalizedTranslator(1 - strafe);
-		Rposition = R * Rposition;
-	}
-	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
 		normalizedTranslator R = _normalizedTranslator(1 + strafe);
 		Rposition = R * Rposition;
 	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-		normalizedTranslator R = _normalizedTranslator(1 + forward);
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+		normalizedTranslator R = _normalizedTranslator(1 - strafe);
 		Rposition = R * Rposition;
 	}
-	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
 		normalizedTranslator R = _normalizedTranslator(1 - forward);
 		Rposition = R * Rposition;
 	}
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+		normalizedTranslator R = _normalizedTranslator(1 + forward);
+		Rposition = R * Rposition;
+	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-		normalizedTranslator R = _normalizedTranslator(1 - up);
+		normalizedTranslator R = _normalizedTranslator(1 + up);
 		Rposition = R * Rposition;
 	}
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-		normalizedTranslator R = _normalizedTranslator(1 + up);
+		normalizedTranslator R = _normalizedTranslator(1 - up);
 		Rposition = R * Rposition;
 	}
 
 	TRversor RModel = _TRversor(Rvert * Rhoriz * Rposition);
-	Mat4x4 modelMat = versorToFlatPointMatrix(RModel);
+	modelMat = versorToFlatPointMatrix(RModel);
 	viewMat = matrixMultiply(projMat, modelMat);
 	planeTransformMat = versorToPlaneMatrix(RModel);
+}
+
+void Camera::setFoV(float newFoV){
+	float FoVfactor = 1 / tanf(newFoV / 2);
+	projMat.c[0] = -(float)parent->getSize().y / (float)parent->getSize().x * FoVfactor;
+	projMat.c[5] = -FoVfactor;
+	FoV = newFoV;
+	viewMat = matrixMultiply(projMat, modelMat);
 }

@@ -46,7 +46,7 @@ Triangle::Triangle(Mesh* mesh, int a, int b, int c,
 }
 
 // Moves mesh in model space, e.g. to adjust for inappropriate coordinates.
-void Mesh::motion(c3ga::normalizedPoint location, c3ga::rotor R, float scale)
+void Mesh::motion(c3ga::normalizedPoint location, float scale, c3ga::rotor R)
 {
 	float logScale = log(scale);
 	normalizedTranslator T =
